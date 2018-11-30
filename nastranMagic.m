@@ -117,7 +117,7 @@ classdef nastranMagic < handle
 
 
 
-        function [timeResp] = parseTimeResponse(obj)
+        function [obj, timeResp] = parseTimeResponse(obj)
             %PARSETIMERESPONSE Parses time response from NASTRAN file to output vector.
 
             obj.setBounds('timeResponse');
@@ -130,6 +130,60 @@ classdef nastranMagic < handle
             plot(obj.data(:,1), obj.data(:,2))
 
         end
+
+
+
+        function [vg] = vgSingleMode(obj, modeNo)
+
+           % count number of figures in input; if > 4, return error
+           if (modeNo > 9999)
+             error('requested mode number needs to be < 10000.')
+           elseif (modeNo < 10)
+             figures = 1;
+           elseif (modeNo < 100)
+             figures = 2;
+           elseif (modeNo < 1000)
+             figures = 3;
+           else
+             figures = 4;
+           end
+
+           % add needed spaces to initial string
+           spacesToAdd = 4 - figures;
+           istr = 'POINT = ';
+           for counter = 1: spacesToAdd
+             istr = [istr ' '];
+           end
+
+           % build strings and extract text
+           startString = [istr int2str(modeNo) '     MACH NUMBER'];
+           endString = 'MSC/MD NASTRAN MODES ANALYSIS SET';
+           obj.setBounds(startString, endString);
+           obj.extract();
+
+           % check whether extraction was succesful
+           if (isempty(obj.tempData))
+             error(['Unable to find requested mode: mode ' int2str(modeNo) ' not found.'])
+           end
+
+           % remove unnecessary lines
+           obj.tempData = splitlines(obj.tempData);
+           obj.tempData(1:4) = [];
+           obj.tempData(end) = [];
+
+           % build array
+           obj.makeArray;
+
+           % select only necessary columns
+           obj.data = obj.data(:, 3:4)
+
+           % return & plot
+           vg = obj.data;
+
+           plot(obj.data(:,1), obj.data(:,2))
+
+        end
+
 
 
 
