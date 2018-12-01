@@ -25,7 +25,7 @@ where _tr_ is a matrix whose first coulumn contains values of time, while second
 To plot the V-g diagram of a selection of modes, use:
 
 ``` MATLAB
-modes = [1 2 5]
+modes = [1 2 5];
 my_file.plotVg(modes);
 ```
 
