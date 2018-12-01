@@ -105,12 +105,14 @@ classdef nastranMagic < handle
 
         function [obj] = makeArray(obj)
 
-           for line = 1:length(obj.tempData)
+           % clean data
+           obj.data = [];
 
+           % build array
+           for line = 1:length(obj.tempData)
              newRow = sscanf(obj.tempData(line),'%e');
              newRow = newRow';
              obj.data = [obj.data; newRow];
-
            end
 
         end
@@ -133,20 +135,39 @@ classdef nastranMagic < handle
 
 
 
+        function [noFigures] = getFigures(obj, int)
+
+           if (floor(int) ~= int)
+             error('input argument is not an integer.')
+           end
+
+           noFigures = 1;
+           base = 10;
+           threshold = base^noFigures;
+
+           while (int >= threshold)
+
+             noFigures = noFigures + 1;
+             threshold = base^noFigures;
+
+             if (noFigures > 50)
+                error('input number is too large.')
+                break
+             end
+
+           end
+
+        end
+
+
+
         function [vg] = vgSingleMode(obj, modeNo)
 
            % count number of figures in input; if > 4, return error
            if (modeNo > 9999)
              error('requested mode number needs to be < 10000.')
-           elseif (modeNo < 10)
-             figures = 1;
-           elseif (modeNo < 100)
-             figures = 2;
-           elseif (modeNo < 1000)
-             figures = 3;
-           else
-             figures = 4;
            end
+           figures = obj.getFigures(modeNo);
 
            % add needed spaces to initial string
            spacesToAdd = 4 - figures;
@@ -154,14 +175,12 @@ classdef nastranMagic < handle
            for counter = 1: spacesToAdd
              istr = [istr ' '];
            end
-
-           % build strings and extract text
            startString = [istr int2str(modeNo) '     MACH NUMBER'];
            endString = 'MSC/MD NASTRAN MODES ANALYSIS SET';
+
+           % build strings and extract text; check for success of extraction
            obj.setBounds(startString, endString);
            obj.extract();
-
-           % check whether extraction was succesful
            if (isempty(obj.tempData))
              error(['Unable to find requested mode: mode ' int2str(modeNo) ' not found.'])
            end
@@ -175,12 +194,31 @@ classdef nastranMagic < handle
            obj.makeArray;
 
            % select only necessary columns
-           obj.data = obj.data(:, 3:4)
+           obj.data = obj.data(:, 3:4);
 
-           % return & plot
+           % return
            vg = obj.data;
 
+           % plot
            plot(obj.data(:,1), obj.data(:,2))
+
+        end
+
+
+
+        function [] = plotVg(obj, modes)
+
+           figure('Name','V-g diagram','NumberTitle','off')
+           hold on
+           description = [];
+
+           for i = modes
+             obj.vgSingleMode(i);
+             description = [description; 'mode ' int2str(i)];
+           end
+
+           legend({description}) % 'Location','southwest'
+           hold off
 
         end
 
