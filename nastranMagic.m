@@ -28,33 +28,6 @@ classdef nastranMagic < handle
 
 
 
-        function [obj] = setBounds(obj, arg1, arg2)
-
-           narginchk(2,3); % obj actually counts as an argument even if it's
-                           % always implicit
-
-           if nargin == 3 % manually inserted bounds
-
-             obj.initialString = arg1;
-             obj.finalString = arg2;
-
-           else
-
-             requestedMode = arg1;
-
-             if requestedMode == 'timeResponse'; % automatic time response mode
-
-                obj.initialString = string('POINT-ID =         1');
-                obj.finalString = string('* * * *  D B D I C T   P R I N T  * * * *');
-
-             end
-
-          end
-
-        end
-
-
-
         function [obj] = extract(obj)
 
            temp_string = extractFileText(obj.fileName);
@@ -65,7 +38,7 @@ classdef nastranMagic < handle
 
 
 
-        function [obj] = filter(obj)
+        function [obj] = filter4tr(obj)
 
            [temp_size,~] = size(obj.tempData);
            line = 1;
@@ -119,12 +92,28 @@ classdef nastranMagic < handle
 
 
 
-        function [obj, timeResp] = parseTimeResponse(obj)
+        function [timeResp] = parseTimeResponse(obj, point)
             %PARSETIMERESPONSE Parses time response from NASTRAN file to output vector.
 
-            obj.setBounds('timeResponse');
+            % prepare string for text extraction
+            if (point > 999999999)
+              error('requested mode number needs to be < 1000000000.')
+            end
+            figures = obj.getFigures(point);
+
+            % add needed spaces to initial string
+            spacesToAdd = 9 - figures;
+            istr = 'POINT-ID = ';
+            for counter = 1:spacesToAdd
+              istr = [istr ' '];
+            end
+
+            % set bounds
+            obj.initialString = [istr int2str(point)];
+            obj.finalString = '* * * *  D B D I C T   P R I N T  * * * *';
+
             obj.extract();
-            obj.filter();
+            obj.filter4tr();
             obj.makeArray();
 
             timeResp = obj.data;
@@ -175,11 +164,12 @@ classdef nastranMagic < handle
            for counter = 1: spacesToAdd
              istr = [istr ' '];
            end
-           startString = [istr int2str(modeNo) '     MACH NUMBER'];
-           endString = 'MSC/MD NASTRAN MODES ANALYSIS SET';
 
-           % build strings and extract text; check for success of extraction
-           obj.setBounds(startString, endString);
+           % set bounds
+           obj.initialString = [istr int2str(modeNo) '     MACH NUMBER'];
+           obj.finalString = 'MSC/MD NASTRAN MODES ANALYSIS SET';
+
+           % extract text; check for success of extraction
            obj.extract();
            if (isempty(obj.tempData))
              error(['Unable to find requested mode: mode ' int2str(modeNo) ' not found.'])
@@ -207,6 +197,9 @@ classdef nastranMagic < handle
 
 
         function [] = plotVg(obj, modes)
+           %PLOTVG plots V-g diagram for specified modes. For instance:
+           %file.plotVg([1 2 5])
+           %plots modes 1, 2 and 5.
 
            figure('Name','V-g diagram','NumberTitle','off')
            hold on

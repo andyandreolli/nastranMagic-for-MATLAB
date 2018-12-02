@@ -13,10 +13,10 @@ my_file = nastranMagic('file_name.f06');
 To parse time response and plot it, just call parseTimeResponse() function:
 
 ``` MATLAB
-tr = my_file.parseTimeResponse();
+tr = my_file.parseTimeResponse(point);
 ```
 
-where _tr_ is a matrix whose first coulumn contains values of time, while second column contains values of the selected component of the selected point at the corresponding time. Notice that the function will automatically plot time story.
+where _point_ is an integer and _tr_ is a matrix whose first coulumn contains values of time, while second column contains values of the selected component of the selected point at the corresponding time. Notice that the function will automatically plot time story.
 
 
 
@@ -42,6 +42,6 @@ where the first column of _vg_ contains velocities, the second values of g.
 
 ## To do and to be fixed
 - properly comment the code
-- allow user to select points/components
+- allow user to select points/components (TO BE IMPROVED)
 - frequency response
 - bisection method to find zeroes on V-g plot (?)
