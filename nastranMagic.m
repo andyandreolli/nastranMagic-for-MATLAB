@@ -201,7 +201,7 @@ classdef nastranMagic < handle
            %file.plotVg([1 2 5])
            %plots modes 1, 2 and 5.
 
-           figure('Name','V-g diagram','NumberTitle','off')
+           figure('Name',[obj.fileName ': V-g diagram'],'NumberTitle','off')
            hold on
            description = [];
 
