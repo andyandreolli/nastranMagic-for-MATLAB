@@ -190,7 +190,7 @@ classdef nastranMagic < handle
            vg = obj.data;
 
            % plot
-           plot(obj.data(:,1), obj.data(:,2))
+           scatter(obj.data(:,1), obj.data(:,2))
 
         end
 
