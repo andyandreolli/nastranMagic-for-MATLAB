@@ -9,6 +9,7 @@ classdef nastranMagic < handle
         initialString % string that determines where cut starts
         finalString % string that determines where cut ends
         tempData % temporary
+        eigenvalues % well, I guess that is pretty straightforward
         data
 
     end
@@ -33,6 +34,30 @@ classdef nastranMagic < handle
            temp_string = extractFileText(obj.fileName);
            temp_string = extractBetween(temp_string, obj.initialString, obj.finalString);
            obj.tempData = splitlines(temp_string);
+
+        end
+
+
+
+        function quickFilter(obj)
+
+           for c = length(obj.tempData):1
+
+             row = char(obj.tempData(c));
+             if isletter(row(1))
+                obj.tempData(c) = [];
+             end
+
+           end
+
+
+           for c = 1:length(obj.tempData)
+
+             row = char(obj.tempData(c));
+             toDelete = isletter(row);
+             row(toDelete) = [];
+             obj.tempData(c) = string(row);
+           end
 
         end
 
@@ -210,9 +235,59 @@ classdef nastranMagic < handle
              description = [description; 'mode ' int2str(i)];
            end
 
-           legend({description}) % 'Location','southwest'
+           legend({description}, 'Location', 'Best') % 'Location','southwest'
            hold off
 
+        end
+
+
+
+        function [strng] = eigenvString(obj, no)
+           % Returns starting string of the desired eigenvector
+
+           figs = obj.getFigures(no);
+
+           if (figs > 9)
+             error('mode number is too high; please choose a mode whose identifier is < 999999999.')
+           end
+
+           % add needed spaces to initial string
+           spacesToAdd = 9 - figs;
+           ststr = 'R E A L   E I G E N V E C T O R   N O .  ';
+           for counter = 1:spacesToAdd
+             ststr = [ststr ' '];
+           end
+
+           strng = [ststr, int2str(no)]; % 9 cifre massimo
+
+        end
+
+
+
+        function [isPresent] = modeExists(obj, no)
+
+           target = obj.eigenvString(no);
+           index = strfind(obj.fileName, target);
+           isPresent = ~isempty(index);
+
+        end
+
+
+
+        function [mode] = singleEigVec(obj, no);
+
+           obj.initialString = obj.eigenvString(no);
+
+           if obj.modeExists(no + 1)
+             obj.finalString = obj.eigenvString(no + 1);
+          else
+             obj.finalString = '*** USER INFORMATION MESSAGE 4110 (OUTPX2)';
+           end
+
+           obj.extract();
+
+           obj.makeArray();
+           obj.quickFilter();
         end
 
 
