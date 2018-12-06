@@ -1,3 +1,8 @@
+% TODO FIXME:
+% - all functions should save data in obj.data or obj.tempData; they also return data for external
+%   use. However, internal use should not refer to function result but to obj's properties.
+
+
 classdef nastranMagic < handle
     %NASTRANMAGIC Parses and/or plots results from NASTRAN.
 
@@ -25,6 +30,8 @@ classdef nastranMagic < handle
             %   Simply pass the name of the file with Nastran's results.
 
             obj.fileName = inputArg1;
+            obj.tempData = extractFileText(obj.fileName);
+
         end
 
 
@@ -41,22 +48,60 @@ classdef nastranMagic < handle
 
         function quickFilter(obj)
 
-           for c = length(obj.tempData):1
+           for c = length(obj.tempData):-1:1
 
              row = char(obj.tempData(c));
-             if isletter(row(1))
+             rl = length(row);
+
+             if length(row) == 0 %
                 obj.tempData(c) = [];
+
+             elseif isstrprop(row(1),'digit') % if first character is digit, row is deleted
+                obj.tempData(c) = [];
+
+             else
+
+                j = 1;
+
+                while (j < rl) % loop to get first non-space character in row
+                   if row(j) ~= ' '
+                      break;
+                   end
+                   j = j + 1;
+                end
+
+                % delete row if first non-space character is a letter or if row is empty
+                if (j == rl | isletter(row(j)))
+                   obj.tempData(c) = [];
+                else
+
+                   % finally eliminate letters from remaining rows
+                   toDelete = isletter(row);
+                   for k = 1:rl
+                      if toDelete(k)
+                        if (k == 1)
+                           if (~isstrprop(row(2),'digit'))
+                              row(k) = [];
+                           end
+                        elseif (k == rl)
+                           if  (~isstrprop(row(k-1),'digit'))
+                              row(k) = [];
+                           end
+                        else
+                           if (~isstrprop(row(k+1),'digit'))
+                           % TODO FIXME if I add control on k-1 as well, MATLAB returns "index
+                           %            exceeded error - I don't know why"
+                              row(k) = [];
+                           end
+                        end
+                     end
+                   end
+                   obj.tempData(c) = string(row);
+
+                end
+
              end
 
-           end
-
-
-           for c = 1:length(obj.tempData)
-
-             row = char(obj.tempData(c));
-             toDelete = isletter(row);
-             row(toDelete) = [];
-             obj.tempData(c) = string(row);
            end
 
         end
@@ -267,7 +312,7 @@ classdef nastranMagic < handle
         function [isPresent] = modeExists(obj, no)
 
            target = obj.eigenvString(no);
-           index = strfind(obj.fileName, target);
+           index = strfind(obj.tempData, target);
            isPresent = ~isempty(index);
 
         end
@@ -288,8 +333,11 @@ classdef nastranMagic < handle
 
            obj.makeArray();
            obj.quickFilter();
-        end
+           obj.makeArray();
 
+           mode = obj.data;
+
+        end
 
 
 
